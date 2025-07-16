@@ -1,5 +1,6 @@
 import string
 import secrets
+from abc import ABC, abstractmethod
 
 def generate_password(length, use_upper, use_digits, use_symbols):
     """Génère un mot de passe selon les critères spécifiés"""
@@ -68,3 +69,79 @@ def evaluate_password_strength(password):
         return f"Moyenne ({time_str})", "orange"
     else:  # Plus d'1 an
         return f"Forte ({time_str})", "green"
+
+
+# Pattern Observer
+class Observer:
+    """Interface pour le pattern Observer"""
+    def update(self, subject):
+        """Méthode à implémenter par les observateurs"""
+        raise NotImplementedError("La méthode update doit être implémentée")
+
+class Observable:
+    """Classe de base pour les objets observables"""
+    def __init__(self):
+        self._observers = []
+    
+    def attach(self, observer):
+        """Ajoute un observateur"""
+        if observer not in self._observers:
+            self._observers.append(observer)
+    
+    def detach(self, observer):
+        """Retire un observateur"""
+        if observer in self._observers:
+            self._observers.remove(observer)
+    
+    def notify(self):
+        """Notifie tous les observateurs"""
+        for observer in self._observers:
+            observer.update(self)
+
+
+class PasswordGenerator(Observable):
+    """Générateur de mots de passe avec pattern Observer"""
+    def __init__(self):
+        super().__init__()
+        self.length = 12
+        self.use_upper = True
+        self.use_digits = True
+        self.use_symbols = True
+        self.current_password = ""
+        self.history = []
+    
+    def set_length(self, length):
+        """Définit la longueur du mot de passe"""
+        self.length = length
+        self.notify()
+    
+    def set_use_upper(self, use_upper):
+        """Définit l'utilisation des majuscules"""
+        self.use_upper = use_upper
+        self.notify()
+    
+    def set_use_digits(self, use_digits):
+        """Définit l'utilisation des chiffres"""
+        self.use_digits = use_digits
+        self.notify()
+    
+    def set_use_symbols(self, use_symbols):
+        """Définit l'utilisation des symboles"""
+        self.use_symbols = use_symbols
+        self.notify()
+    
+    def generate_password(self):
+        """Génère un nouveau mot de passe"""
+        if not any([True, self.use_upper, self.use_digits, self.use_symbols]):
+            return ""
+        
+        password = generate_password(self.length, self.use_upper, self.use_digits, self.use_symbols)
+        if password:
+            self.current_password = password
+            self.history.append(password)
+            self.notify()
+        return password
+    
+    def get_history_count(self):
+        """Retourne le nombre de mots de passe dans l'historique"""
+        return len(self.history)
