@@ -33,6 +33,14 @@ def on_generate():
     entry_result.delete(0, tk.END)
     entry_result.insert(0, processed)
 
+def on_copy():
+    result = entry_result.get()
+    if result:
+        root.clipboard_clear()
+        root.clipboard_append(result)
+        root.update()
+        messagebox.showinfo("Copié", "Mot de passe copié dans le presse-papier.")
+
 # --- Interface ---
 root = tk.Tk()
 root.title("Générateur de mot de passe")
@@ -67,5 +75,8 @@ tk.Button(root, text="Générer", command=on_generate).grid(row=4, column=0, col
 tk.Label(root, text="Mot de passe généré :").grid(row=5, column=0, sticky="w")
 entry_result = tk.Entry(root, width=40)
 entry_result.grid(row=5, column=1, columnspan=2)
+
+# Bouton copier
+tk.Button(root, text="Copier", command=on_copy).grid(row=6, column=0, columnspan=3, pady=5)
 
 root.mainloop()
