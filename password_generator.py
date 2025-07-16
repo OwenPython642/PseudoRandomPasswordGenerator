@@ -15,42 +15,65 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-def evaluate_password_strength(password):
-    """Évalue la robustesse du mot de passe et retourne un score et une couleur"""
+def calculate_brute_force_time(password):
+    """Calcule le temps estimé pour craquer le mot de passe par brute force"""
     if not password:
-        return "Aucun", "red"
+        return 0, "Aucun"
     
-    score = 0
-    length = len(password)
-    
-    # Points pour la longueur
-    if length >= 8:
-        score += 2
-    elif length >= 6:
-        score += 1
-    
-    # Points pour la diversité des caractères
+    # Détermination de l'espace de caractères
+    charset_size = 0
     has_lower = any(c.islower() for c in password)
     has_upper = any(c.isupper() for c in password)
     has_digit = any(c.isdigit() for c in password)
     has_symbol = any(c in string.punctuation for c in password)
     
-    char_types = sum([has_lower, has_upper, has_digit, has_symbol])
-    score += char_types
+    if has_lower: charset_size += 26
+    if has_upper: charset_size += 26
+    if has_digit: charset_size += 10
+    if has_symbol: charset_size += 32  # Approximation des symboles courants
     
-    # Points bonus pour longueur élevée
-    if length >= 12:
-        score += 1
-    if length >= 16:
-        score += 1
+    # Calcul du nombre de combinaisons possibles
+    length = len(password)
+    total_combinations = charset_size ** length
     
-    # Détermination du niveau
-    if score >= 6:
-        return "Forte", "green"
-    elif score >= 4:
-        return "Moyenne", "orange"
+    # Temps moyen = la moitié des combinaisons possibles
+    # Vitesse moderne d'attaque brute force : ~1 milliard de tentatives/seconde
+    attempts_per_second = 1_000_000_000
+    average_time_seconds = total_combinations / (2 * attempts_per_second)
+    
+    return average_time_seconds, format_time(average_time_seconds)
+
+def format_time(seconds):
+    """Formate le temps en unités lisibles"""
+    if seconds < 1:
+        return "< 1 seconde"
+    elif seconds < 60:
+        return f"{int(seconds)} secondes"
+    elif seconds < 3600:
+        return f"{int(seconds/60)} minutes"
+    elif seconds < 86400:
+        return f"{int(seconds/3600)} heures"
+    elif seconds < 31536000:
+        return f"{int(seconds/86400)} jours"
+    elif seconds < 31536000000:
+        return f"{int(seconds/31536000)} années"
     else:
-        return "Faible", "red"
+        return f"{seconds/31536000:.1e} années"
+
+def evaluate_password_strength(password):
+    """Évalue la robustesse du mot de passe basée sur le temps de brute force"""
+    if not password:
+        return "Aucun", "red"
+    
+    time_seconds, time_str = calculate_brute_force_time(password)
+    
+    # Classification basée sur le temps de crack
+    if time_seconds < 86400:  # Moins d'1 jour
+        return f"Faible ({time_str})", "red"
+    elif time_seconds < 31536000:  # Moins d'1 an
+        return f"Moyenne ({time_str})", "orange"
+    else:  # Plus d'1 an
+        return f"Forte ({time_str})", "green"
 def generate_password(length, use_upper, use_digits, use_symbols):
     chars = string.ascii_lowercase
     if use_upper: chars += string.ascii_uppercase
@@ -65,7 +88,7 @@ class PassGen(QWidget):
         layout = QFormLayout(self)
 
         self.spin_len = QSpinBox()
-        self.spin_len.setRange(1, 1001)
+        self.spin_len.setRange(1, 100)
         layout.addRow("Longueur :", self.spin_len)
 
         self.cb_upper = QCheckBox("Majuscules")
@@ -92,7 +115,8 @@ class PassGen(QWidget):
         # Indicateur de sécurité
         self.security_label = QLabel("Sécurité : Aucun")
         self.security_label.setStyleSheet("QLabel { color: red; font-weight: bold; }")
-        layout.addRow("Robustesse :", self.security_label)
+        self.security_label.setWordWrap(True)  # Permet le retour à la ligne
+        layout.addRow("Temps de crack :", self.security_label)
 
     def on_generate(self):
         pwd = generate_password(
