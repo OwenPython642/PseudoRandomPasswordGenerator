@@ -1,7 +1,8 @@
-import random
-import string
-import tkinter as tk
-from tkinter import messagebox
+import sys, string, secrets
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QFormLayout, QSpinBox, QCheckBox,
+    QPushButton, QLineEdit, QMessageBox
+)
 
 def generate_password(length, use_upper, use_digits, use_symbols):
     chars = string.ascii_lowercase
@@ -10,73 +11,56 @@ def generate_password(length, use_upper, use_digits, use_symbols):
     if use_symbols: chars += string.punctuation
     if not chars:
         return ""
-    return ''.join(random.choice(chars) for _ in range(length))
+    return ''.join(secrets.choice(chars) for _ in range(length))
 
-def word_processing(word):
-    return word.encode("unicode_escape").decode()
+class PassGen(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Générateur de mot de passe PyQt")
+        form = QFormLayout(self)
 
-def on_generate():
-    try:
-        length = int(entry_length.get())
-        if length <= 0:
-            raise ValueError
-    except ValueError:
-        messagebox.showerror("Erreur", "La longueur doit être un entier positif.")
-        return
+        self.spin_len = QSpinBox(value=1, minimum=1, maximum=1000)
+        form.addRow("Longueur :", self.spin_len)
 
-    use_upper = var_upper.get()
-    use_digits = var_digits.get()
-    use_symbols = var_symbols.get()
+        self.cb_upper = QCheckBox("Majuscules")
+        form.addRow(self.cb_upper)
+        self.cb_digits = QCheckBox("Chiffres")
+        form.addRow(self.cb_digits)
+        self.cb_symbols = QCheckBox("Symboles")
+        form.addRow(self.cb_symbols)
 
-    password = generate_password(length, use_upper, use_digits, use_symbols)
-    processed = word_processing(password)
-    entry_result.delete(0, tk.END)
-    entry_result.insert(0, processed)
+        btn_gen = QPushButton("Générer")
+        btn_gen.clicked.connect(self.on_generate)
+        form.addRow(btn_gen)
 
-def on_copy():
-    result = entry_result.get()
-    if result:
-        root.clipboard_clear()
-        root.clipboard_append(result)
-        root.update()
-        messagebox.showinfo("Copié", "Mot de passe copié dans le presse-papier.")
+        self.edit_res = QLineEdit()
+        self.edit_res.setReadOnly(True)
+        form.addRow("Mot de passe :", self.edit_res)
 
-# --- Interface ---
-root = tk.Tk()
-root.title("Générateur de mot de passe")
+        btn_copy = QPushButton("Copier")
+        btn_copy.clicked.connect(self.on_copy)
+        form.addRow(btn_copy)
 
-# Longueur
-tk.Label(root, text="Longueur du mot de passe :").grid(row=0, column=0, sticky="w")
-entry_length = tk.Entry(root)
-entry_length.grid(row=0, column=1)
+    def on_generate(self):
+        length = self.spin_len.value()
+        pwd = generate_password(
+            length,
+            self.cb_upper.isChecked(),
+            self.cb_digits.isChecked(),
+            self.cb_symbols.isChecked()
+        )
+        if not pwd:
+            QMessageBox.warning(self, "Erreur", "Aucun caractère sélectionné.")
+        self.edit_res.setText(pwd)
 
-# Chiffres
-tk.Label(root, text="Inclure des chiffres ?").grid(row=1, column=0, sticky="w")
-var_digits = tk.BooleanVar(value=False)
-tk.Radiobutton(root, text="Oui", variable=var_digits, value=True).grid(row=1, column=1, sticky="w")
-tk.Radiobutton(root, text="Non", variable=var_digits, value=False).grid(row=1, column=2, sticky="w")
+    def on_copy(self):
+        pwd = self.edit_res.text()
+        if pwd:
+            QApplication.clipboard().setText(pwd)
+            QMessageBox.information(self, "Copié", "Mot de passe copié.")
 
-# Majuscules
-tk.Label(root, text="Inclure des majuscules ?").grid(row=2, column=0, sticky="w")
-var_upper = tk.BooleanVar(value=False)
-tk.Radiobutton(root, text="Oui", variable=var_upper, value=True).grid(row=2, column=1, sticky="w")
-tk.Radiobutton(root, text="Non", variable=var_upper, value=False).grid(row=2, column=2, sticky="w")
-
-# Symboles
-tk.Label(root, text="Inclure des symboles ?").grid(row=3, column=0, sticky="w")
-var_symbols = tk.BooleanVar(value=False)
-tk.Radiobutton(root, text="Oui", variable=var_symbols, value=True).grid(row=3, column=1, sticky="w")
-tk.Radiobutton(root, text="Non", variable=var_symbols, value=False).grid(row=3, column=2, sticky="w")
-
-# Bouton générer
-tk.Button(root, text="Générer", command=on_generate).grid(row=4, column=0, columnspan=3, pady=10)
-
-# Résultat
-tk.Label(root, text="Mot de passe généré :").grid(row=5, column=0, sticky="w")
-entry_result = tk.Entry(root, width=40)
-entry_result.grid(row=5, column=1, columnspan=2)
-
-# Bouton copier
-tk.Button(root, text="Copier", command=on_copy).grid(row=6, column=0, columnspan=3, pady=5)
-
-root.mainloop()
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    w = PassGen()
+    w.show()
+    sys.exit(app.exec_())
