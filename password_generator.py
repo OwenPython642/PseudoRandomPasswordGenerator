@@ -12,8 +12,19 @@ def word_processing(word):
     return word.encode("unicode_escape").decode()
 
 if __name__ == "__main__":
-    length = int(input("Longueur du mot de passe : "))
-    upper = input("Majuscules ? (o/n) : ").lower() == "o"
-    digits = input("Chiffres ? (o/n) : ").lower() == "o"
-    symbols = input("Symboles ? (o/n) : ").lower() == "o"
-    print(word_processing(generate_password(length, upper, digits, symbols)))
+    try:
+        length = int(input("Longueur du mot de passe : "))
+        if length <= 0:
+            raise ValueError("La longueur doit être supérieure à zéro.")
+    except ValueError as e:
+        print("Erreur :", e)
+        exit(1)
+
+    try:
+        upper = input("Majuscules ? (o/n) ").strip().lower() == "o"
+        digits = input("Chiffres ? (o/n) ").strip().lower() == "o"
+        symbols = input("Symboles ? (o/n) ").strip().lower() == "o"
+        print(word_processing(generate_password(length, upper, digits, symbols)))
+    except Exception as e:
+        print("Une erreur est survenue :", e)
+        exit(1)
