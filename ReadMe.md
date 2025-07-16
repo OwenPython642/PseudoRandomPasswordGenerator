@@ -10,7 +10,7 @@ Une application de bureau moderne avec interface graphique pour générer des mo
 ## 🌟 Fonctionnalités
 
 ### 🎯 Génération de Mots de Passe
-- **Longueur personnalisable** : De 1 à 1000 caractères
+- **Longueur personnalisable** : De 1 à 100 caractères
 - **Types de caractères configurables** :
   - Lettres minuscules (a-z) - toujours incluses
   - Lettres majuscules (A-Z)
